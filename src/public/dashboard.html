@@ -352,8 +352,8 @@
                 showFormError('RTSP URL tidak boleh kosong');
                 return false;
             }
-            if (!streamData.rtspUrl.match(/^rtsp:\/\/[\w-]+(\.[\w-]+)+([\w.,@?^=%&:/~+#-]*[\w@?^=%&/~+#-])?$/)) {
-                showFormError('Format RTSP URL tidak valid');
+            if (!streamData.rtspUrl.match(/^rtsp:\/\/[\w.-]+:[\w.-]+@[\d.]+:\d+\/cam\/realmonitor\?channel=\d+&subtype=\d+$/)) {
+                showFormError('Format RTSP URL tidak valid. Format yang benar: rtsp://username:password@ip:port/cam/realmonitor?channel=1&subtype=0');
                 return false;
             }
             if (!streamData.rtmpUrl) {
