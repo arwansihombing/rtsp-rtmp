@@ -162,16 +162,17 @@
             <form id="addStreamForm">
                 <div style="margin-bottom: 15px;">
                     <label for="streamName" style="display: block; margin-bottom: 5px;">Nama Stream:</label>
-                    <input type="text" id="streamName" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    <input type="text" id="streamName" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" pattern=".{3,}" title="Nama stream minimal 3 karakter">
                 </div>
                 <div style="margin-bottom: 15px;">
                     <label for="rtspUrl" style="display: block; margin-bottom: 5px;">RTSP URL:</label>
-                    <input type="text" id="rtspUrl" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    <input type="url" id="rtspUrl" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" pattern="^rtsp://.*" title="URL harus dimulai dengan rtsp://">
                 </div>
                 <div style="margin-bottom: 15px;">
                     <label for="rtmpUrl" style="display: block; margin-bottom: 5px;">RTMP URL:</label>
-                    <input type="text" id="rtmpUrl" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    <input type="url" id="rtmpUrl" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" pattern="^rtmp://.*" title="URL harus dimulai dengan rtmp://">
                 </div>
+                <div id="formError" style="color: #e74c3c; margin-bottom: 15px; display: none;"></div>
                 <div style="display: flex; justify-content: flex-end; gap: 10px;">
                     <button type="button" class="btn btn-danger" onclick="closeAddStreamModal()">Batal</button>
                     <button type="submit" class="btn btn-primary">Simpan</button>
@@ -269,6 +270,9 @@
 
         // Handle stream controls
         async function toggleStream(id, currentStatus) {
+            const token = checkAuth();
+            if (!token) return;
+
             const action = currentStatus === 'running' ? 'stop' : 'start';
             try {
                 const response = await fetch(`/api/streams/${id}/${action}`, {
@@ -277,6 +281,10 @@
                         'Authorization': `Bearer ${token}`
                     }
                 });
+                if (response.status === 401) {
+                    handleUnauthorized();
+                    return;
+                }
                 if (response.ok) {
                     fetchStreams();
                 }
@@ -287,6 +295,9 @@
 
         async function deleteStream(id) {
             if (confirm('Apakah Anda yakin ingin menghapus stream ini?')) {
+                const token = checkAuth();
+                if (!token) return;
+
                 try {
                     const response = await fetch(`/api/streams/${id}`, {
                         method: 'DELETE',
@@ -294,6 +305,10 @@
                             'Authorization': `Bearer ${token}`
                         }
                     });
+                    if (response.status === 401) {
+                        handleUnauthorized();
+                        return;
+                    }
                     if (response.ok) {
                         fetchStreams();
                     }
@@ -319,16 +334,45 @@
             document.getElementById('addStreamForm').reset();
         }
 
+        function showFormError(message) {
+            const errorDiv = document.getElementById('formError');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            setTimeout(() => {
+                errorDiv.style.display = 'none';
+            }, 5000);
+        }
+
+        function validateStreamData(streamData) {
+            if (streamData.name.length < 3) {
+                showFormError('Nama stream harus minimal 3 karakter');
+                return false;
+            }
+            if (!streamData.rtspUrl.startsWith('rtsp://')) {
+                showFormError('RTSP URL harus dimulai dengan rtsp://');
+                return false;
+            }
+            if (!streamData.rtmpUrl.startsWith('rtmp://')) {
+                showFormError('RTMP URL harus dimulai dengan rtmp://');
+                return false;
+            }
+            return true;
+        }
+
         document.getElementById('addStreamForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const token = checkAuth();
             if (!token) return;
 
             const streamData = {
-                name: document.getElementById('streamName').value,
-                rtspUrl: document.getElementById('rtspUrl').value,
-                rtmpUrl: document.getElementById('rtmpUrl').value
+                name: document.getElementById('streamName').value.trim(),
+                rtspUrl: document.getElementById('rtspUrl').value.trim(),
+                rtmpUrl: document.getElementById('rtmpUrl').value.trim()
             };
+
+            if (!validateStreamData(streamData)) {
+                return;
+            }
 
             try {
                 const response = await fetch('/api/streams', {
@@ -350,11 +394,11 @@
                     fetchStreams();
                 } else {
                     const error = await response.json();
-                    alert('Error: ' + (error.message || 'Gagal menambahkan stream'));
+                    showFormError(error.message || 'Gagal menambahkan stream. Pastikan semua data yang dimasukkan sudah benar.');
                 }
             } catch (error) {
                 console.error('Error adding stream:', error);
-                alert('Terjadi kesalahan saat menambahkan stream');
+                showFormError('Terjadi kesalahan saat menambahkan stream. Silakan coba lagi.');
             }
         });
 
