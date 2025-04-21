@@ -156,20 +156,38 @@
     </div>
 
     <script>
-        // Check authentication
-        const token = localStorage.getItem('token');
-        if (!token) {
+        // Check authentication and token validity
+        function checkAuth() {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = '/api/auth/login';
+                return null;
+            }
+            return token;
+        }
+
+        // Handle unauthorized responses
+        function handleUnauthorized() {
+            localStorage.removeItem('token');
             window.location.href = '/api/auth/login';
         }
 
         // Fetch and display streams
         async function fetchStreams() {
+            const token = checkAuth();
+            if (!token) return;
+
             try {
                 const response = await fetch('/api/streams', {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
                 });
+
+                if (response.status === 401) {
+                    handleUnauthorized();
+                    return;
+                }
                 const streams = await response.json();
                 displayStreams(streams);
             } catch (error) {
@@ -177,9 +195,33 @@
             }
         }
 
+        async function makeAuthenticatedRequest(url, options = {}) {
+            const token = checkAuth();
+            if (!token) return null;
+
+            const defaultOptions = {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            };
+
+            const response = await fetch(url, { ...defaultOptions, ...options });
+            if (response.status === 401) {
+                handleUnauthorized();
+                return null;
+            }
+            return response;
+        }
+
         function displayStreams(streams) {
             const streamList = document.getElementById('streamList');
             streamList.innerHTML = '';
+
+            if (!streams || streams.length === 0) {
+                streamList.innerHTML = '<p>Tidak ada stream yang tersedia</p>';
+                return;
+            }
 
             streams.forEach(stream => {
                 const streamItem = document.createElement('div');

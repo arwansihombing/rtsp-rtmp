@@ -5,15 +5,22 @@ const auth = async (req, res, next) => {
   try {
     const authHeader = req.header('Authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Token tidak ditemukan' });
+    }
+
+    const token = authHeader.replace('Bearer ', '').trim();
+    if (!token) {
       return res.status(401).json({ error: 'Token tidak valid' });
     }
 
-    const token = authHeader.replace('Bearer ', '');
     let decoded;
     try {
       decoded = jwt.verify(token, process.env.JWT_SECRET);
     } catch (err) {
-      return res.status(401).json({ error: 'Token tidak valid atau kadaluarsa' });
+      if (err.name === 'TokenExpiredError') {
+        return res.status(401).json({ error: 'Token telah kadaluarsa' });
+      }
+      return res.status(401).json({ error: 'Token tidak valid' });
     }
 
     const user = await User.findOne({
@@ -31,7 +38,8 @@ const auth = async (req, res, next) => {
     req.user = user;
     next();
   } catch (error) {
-    res.status(401).send({ error: 'Silakan autentikasi terlebih dahulu.' });
+    console.error('Auth middleware error:', error);
+    res.status(401).json({ error: 'Silakan autentikasi terlebih dahulu' });
   }
 };
 

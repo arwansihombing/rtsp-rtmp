@@ -15,6 +15,12 @@ const logger = setupLogger();
 // Middleware
 app.use(cors());
 app.use(express.json());
+app.use(express.static('src/public'));
+
+// Serve dashboard page
+app.get('/dashboard', (req, res) => {
+  res.sendFile('dashboard.html', { root: 'src/public' });
+});
 
 // Routes
 app.use('/api/auth', require('./routes/auth'));
