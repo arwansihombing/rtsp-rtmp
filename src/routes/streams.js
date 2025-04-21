@@ -7,23 +7,12 @@ const { logger } = require('../utils/logger');
 
 const router = express.Router();
 
-// Validasi input stream
+// Validasi input stream minimal
 const streamValidation = [
   body('name').trim().notEmpty().withMessage('Nama stream harus diisi'),
-  body('rtspUrl')
-    .trim()
-    .custom((value) => {
-      // Validasi format URL RTSP Dahua
-      const rtspRegex = /^rtsp:\/\/[\w.-]+:[\w.-]+@[\d.]+:\d+\/cam\/realmonitor\?channel=\d+&subtype=\d+$/;
-      if (!rtspRegex.test(value)) {
-        throw new Error('Format URL RTSP tidak valid. Format yang benar: rtsp://username:password@ip:port/cam/realmonitor?channel=1&subtype=0');
-      }
-      return true;
-    }),
-  body('rtmpUrl').trim().isURL().withMessage('URL RTMP tidak valid'),
-  body('streamKey').trim().notEmpty().withMessage('Stream key harus diisi'),
-  body('resolution').optional().matches(/^\d+x\d+$/).withMessage('Format resolusi tidak valid (contoh: 1280x720)'),
-  body('autoRestart').optional().isBoolean().withMessage('Auto restart harus berupa boolean')
+  body('rtspUrl').trim().notEmpty().withMessage('URL RTSP harus diisi'),
+  body('rtmpUrl').trim().notEmpty().withMessage('URL RTMP harus diisi'),
+  body('streamKey').trim().notEmpty().withMessage('Stream key harus diisi')
 ];
 
 // Mendapatkan semua stream
