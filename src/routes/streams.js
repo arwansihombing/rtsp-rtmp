@@ -7,12 +7,11 @@ const { logger } = require('../utils/logger');
 
 const router = express.Router();
 
-// Validasi input stream minimal
+// Validasi input stream minimal - hanya memeriksa field kosong
 const streamValidation = [
-  body('name').trim().notEmpty().withMessage('Nama stream harus diisi'),
-  body('rtspUrl').trim().notEmpty().withMessage('URL RTSP harus diisi'),
-  body('rtmpUrl').trim().notEmpty().withMessage('URL RTMP harus diisi'),
-  body('streamKey').trim().notEmpty().withMessage('Stream key harus diisi')
+  body('name').trim(),
+  body('rtspUrl').trim(),
+  body('rtmpUrl').trim()
 ];
 
 // Mendapatkan semua stream

@@ -162,15 +162,15 @@
             <form id="addStreamForm">
                 <div style="margin-bottom: 15px;">
                     <label for="streamName" style="display: block; margin-bottom: 5px;">Nama Stream:</label>
-                    <input type="text" id="streamName" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" pattern=".{3,}" title="Nama stream minimal 3 karakter">
+                    <input type="text" id="streamName" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
                 </div>
                 <div style="margin-bottom: 15px;">
                     <label for="rtspUrl" style="display: block; margin-bottom: 5px;">RTSP URL:</label>
-                    <input type="url" id="rtspUrl" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    <input type="text" id="rtspUrl" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
                 </div>
                 <div style="margin-bottom: 15px;">
                     <label for="rtmpUrl" style="display: block; margin-bottom: 5px;">RTMP URL:</label>
-                    <input type="url" id="rtmpUrl" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    <input type="text" id="rtmpUrl" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
                 </div>
                 <div id="formError" style="color: #e74c3c; margin-bottom: 15px; display: none;"></div>
                 <div style="display: flex; justify-content: flex-end; gap: 10px;">
@@ -344,18 +344,6 @@
         }
 
         function validateStreamData(streamData) {
-            if (!streamData.name || streamData.name.length < 3) {
-                showFormError('Nama stream harus minimal 3 karakter');
-                return false;
-            }
-            if (!streamData.rtspUrl) {
-                showFormError('RTSP URL tidak boleh kosong');
-                return false;
-            }
-            if (!streamData.rtmpUrl) {
-                showFormError('RTMP URL tidak boleh kosong');
-                return false;
-            }
             return true;
         }
 
