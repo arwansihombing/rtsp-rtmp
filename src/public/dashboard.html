@@ -155,6 +155,31 @@
         </div>
     </div>
 
+    <!-- Modal untuk menambah stream baru -->
+    <div id="addStreamModal" class="modal" style="display: none; position: fixed; z-index: 1; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4);">
+        <div class="modal-content" style="background-color: #fefefe; margin: 15% auto; padding: 20px; border: 1px solid #888; width: 80%; max-width: 500px; border-radius: 8px;">
+            <h2 style="margin-bottom: 20px;">Tambah Stream Baru</h2>
+            <form id="addStreamForm">
+                <div style="margin-bottom: 15px;">
+                    <label for="streamName" style="display: block; margin-bottom: 5px;">Nama Stream:</label>
+                    <input type="text" id="streamName" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <label for="rtspUrl" style="display: block; margin-bottom: 5px;">RTSP URL:</label>
+                    <input type="text" id="rtspUrl" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <label for="rtmpUrl" style="display: block; margin-bottom: 5px;">RTMP URL:</label>
+                    <input type="text" id="rtmpUrl" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                </div>
+                <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                    <button type="button" class="btn btn-danger" onclick="closeAddStreamModal()">Batal</button>
+                    <button type="submit" class="btn btn-primary">Simpan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
         // Check authentication and token validity
         function checkAuth() {
@@ -282,6 +307,55 @@
         document.getElementById('logoutBtn').addEventListener('click', () => {
             localStorage.removeItem('token');
             window.location.href = '/api/auth/login';
+        });
+
+        // Handle add stream modal
+        document.getElementById('addStreamBtn').addEventListener('click', () => {
+            document.getElementById('addStreamModal').style.display = 'block';
+        });
+
+        function closeAddStreamModal() {
+            document.getElementById('addStreamModal').style.display = 'none';
+            document.getElementById('addStreamForm').reset();
+        }
+
+        document.getElementById('addStreamForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const token = checkAuth();
+            if (!token) return;
+
+            const streamData = {
+                name: document.getElementById('streamName').value,
+                rtspUrl: document.getElementById('rtspUrl').value,
+                rtmpUrl: document.getElementById('rtmpUrl').value
+            };
+
+            try {
+                const response = await fetch('/api/streams', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(streamData)
+                });
+
+                if (response.status === 401) {
+                    handleUnauthorized();
+                    return;
+                }
+
+                if (response.ok) {
+                    closeAddStreamModal();
+                    fetchStreams();
+                } else {
+                    const error = await response.json();
+                    alert('Error: ' + (error.message || 'Gagal menambahkan stream'));
+                }
+            } catch (error) {
+                console.error('Error adding stream:', error);
+                alert('Terjadi kesalahan saat menambahkan stream');
+            }
         });
 
         // Initial load
