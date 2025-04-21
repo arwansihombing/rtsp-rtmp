@@ -4,6 +4,7 @@ const cors = require('cors');
 const { sequelize } = require('./models');
 const { setupLogger } = require('./utils/logger');
 const { setupStreamManager } = require('./services/streamManager');
+const { initializeDatabase } = require('./models/init');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -31,6 +32,9 @@ async function init() {
   try {
     await sequelize.sync();
     logger.info('Database berhasil tersinkronisasi');
+    
+    await initializeDatabase();
+    logger.info('Database berhasil diinisialisasi');
 
     const streamManager = await setupStreamManager();
     logger.info('Stream manager berhasil diinisialisasi');
