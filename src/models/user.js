@@ -37,13 +37,12 @@ module.exports = (sequelize) => {
           user.password = await bcrypt.hash(user.password, salt);
         }
       }
-    },
-    methods: {
-      validatePassword: async function(password) {
-        return await bcrypt.compare(password, this.password);
-      }
     }
   });
+
+  User.prototype.validatePassword = async function(password) {
+    return await bcrypt.compare(password, this.password);
+  };
 
   return User;
 };
