@@ -15,7 +15,7 @@ const loginValidation = [
 
 // Handle GET request for login
 router.get('/login', (req, res) => {
-  res.status(405).json({ error: 'Method not allowed. Please use POST method for login.' });
+  res.sendFile('index.html', { root: 'src/public' });
 });
 
 // Login
