@@ -344,16 +344,24 @@
         }
 
         function validateStreamData(streamData) {
-            if (streamData.name.length < 3) {
+            if (!streamData.name || streamData.name.length < 3) {
                 showFormError('Nama stream harus minimal 3 karakter');
                 return false;
             }
-            if (!streamData.rtspUrl.startsWith('rtsp://')) {
-                showFormError('RTSP URL harus dimulai dengan rtsp://');
+            if (!streamData.rtspUrl) {
+                showFormError('RTSP URL tidak boleh kosong');
                 return false;
             }
-            if (!streamData.rtmpUrl.startsWith('rtmp://')) {
-                showFormError('RTMP URL harus dimulai dengan rtmp://');
+            if (!streamData.rtspUrl.match(/^rtsp:\/\/[\w-]+(\.[\w-]+)+([\w.,@?^=%&:/~+#-]*[\w@?^=%&/~+#-])?$/)) {
+                showFormError('Format RTSP URL tidak valid');
+                return false;
+            }
+            if (!streamData.rtmpUrl) {
+                showFormError('RTMP URL tidak boleh kosong');
+                return false;
+            }
+            if (!streamData.rtmpUrl.match(/^rtmp:\/\/[\w-]+(\.[\w-]+)+([\w.,@?^=%&:/~+#-]*[\w@?^=%&/~+#-])?$/)) {
+                showFormError('Format RTMP URL tidak valid');
                 return false;
             }
             return true;
@@ -394,7 +402,13 @@
                     fetchStreams();
                 } else {
                     const error = await response.json();
-                    showFormError(error.message || 'Gagal menambahkan stream. Pastikan semua data yang dimasukkan sudah benar.');
+                    if (response.status === 400) {
+                        showFormError(error.message || 'Data stream tidak valid. Silakan periksa kembali input Anda.');
+                    } else if (response.status === 409) {
+                        showFormError('Stream dengan nama atau URL tersebut sudah ada.');
+                    } else {
+                        showFormError('Gagal menambahkan stream. Silakan coba lagi nanti.');
+                    }
                 }
             } catch (error) {
                 console.error('Error adding stream:', error);
