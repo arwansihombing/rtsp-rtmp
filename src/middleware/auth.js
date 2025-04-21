@@ -3,12 +3,19 @@ const { User } = require('../models');
 
 const auth = async (req, res, next) => {
   try {
-    const token = req.header('Authorization')?.replace('Bearer ', '');
-    if (!token) {
-      throw new Error();
+    const authHeader = req.header('Authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Token tidak valid' });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const token = authHeader.replace('Bearer ', '');
+    let decoded;
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET);
+    } catch (err) {
+      return res.status(401).json({ error: 'Token tidak valid atau kadaluarsa' });
+    }
+
     const user = await User.findOne({
       where: {
         id: decoded.id,
@@ -17,7 +24,7 @@ const auth = async (req, res, next) => {
     });
 
     if (!user) {
-      throw new Error();
+      return res.status(401).json({ error: 'User tidak ditemukan atau tidak aktif' });
     }
 
     req.token = token;
