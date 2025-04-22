@@ -34,7 +34,7 @@ class StreamManager {
         .input(stream.rtspUrl)
         .inputOptions(
           '-rtsp_transport', 'tcp',
-          '-stimeout', '5000000', // Timeout koneksi RTSP (dalam mikrodetik)
+          '-timeout', '5',       // Timeout koneksi dalam detik
           '-reconnect', '1',      // Aktifkan reconnect
           '-reconnect_at_eof', '1',
           '-reconnect_streamed', '1',
