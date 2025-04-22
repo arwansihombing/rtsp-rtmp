@@ -72,7 +72,8 @@ class StreamManager {
         }
       }
 
-      const rtmpUrl = `${stream.rtmpUrl}/${stream.streamKey}`;
+      // Pastikan URL RTMP hanya terdiri dari base URL dan stream key
+      const rtmpUrl = stream.rtmpUrl.endsWith('/') ? `${stream.rtmpUrl}${stream.streamKey}` : `${stream.rtmpUrl}/${stream.streamKey}`;
       
       command.on('start', () => {
         logger.info(`Stream ${stream.name} dimulai dengan sukses`);
