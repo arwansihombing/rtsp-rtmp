@@ -162,15 +162,34 @@
             <form id="addStreamForm">
                 <div style="margin-bottom: 15px;">
                     <label for="streamName" style="display: block; margin-bottom: 5px;">Nama Stream:</label>
-                    <input type="text" id="streamName" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    <input type="text" id="streamName" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" required>
                 </div>
                 <div style="margin-bottom: 15px;">
                     <label for="rtspUrl" style="display: block; margin-bottom: 5px;">RTSP URL:</label>
-                    <input type="text" id="rtspUrl" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    <input type="text" id="rtspUrl" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" required placeholder="rtsp://example.com/stream">
                 </div>
                 <div style="margin-bottom: 15px;">
                     <label for="rtmpUrl" style="display: block; margin-bottom: 5px;">RTMP URL:</label>
-                    <input type="text" id="rtmpUrl" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    <input type="text" id="rtmpUrl" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" required placeholder="rtmp://example.com/live">
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <label for="streamKey" style="display: block; margin-bottom: 5px;">Stream Key:</label>
+                    <input type="text" id="streamKey" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" required placeholder="your-stream-key">
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <label for="outputResolution" style="display: block; margin-bottom: 5px;">Resolusi Output:</label>
+                    <select id="outputResolution" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" required>
+                        <option value="1920x1080">1920x1080 (1080p)</option>
+                        <option value="1280x720">1280x720 (720p)</option>
+                        <option value="854x480">854x480 (480p)</option>
+                        <option value="640x360">640x360 (360p)</option>
+                    </select>
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <label style="display: flex; align-items: center; gap: 8px;">
+                        <input type="checkbox" id="autoRestart" style="margin: 0;">
+                        <span>Auto-restart saat koneksi terputus</span>
+                    </label>
                 </div>
                 <div id="formError" style="color: #e74c3c; margin-bottom: 15px; display: none;"></div>
                 <div style="display: flex; justify-content: flex-end; gap: 10px;">
@@ -344,6 +363,22 @@
         }
 
         function validateStreamData(streamData) {
+            if (!streamData.name || streamData.name.trim() === '') {
+                showFormError('Nama stream harus diisi');
+                return false;
+            }
+            if (!streamData.rtspUrl || !streamData.rtspUrl.startsWith('rtsp://')) {
+                showFormError('RTSP URL tidak valid. URL harus dimulai dengan "rtsp://"');
+                return false;
+            }
+            if (!streamData.rtmpUrl || !streamData.rtmpUrl.startsWith('rtmp://')) {
+                showFormError('RTMP URL tidak valid. URL harus dimulai dengan "rtmp://"');
+                return false;
+            }
+            if (!streamData.streamKey || streamData.streamKey.trim() === '') {
+                showFormError('Stream key harus diisi');
+                return false;
+            }
             return true;
         }
 
@@ -355,7 +390,10 @@
             const streamData = {
                 name: document.getElementById('streamName').value.trim(),
                 rtspUrl: document.getElementById('rtspUrl').value.trim(),
-                rtmpUrl: document.getElementById('rtmpUrl').value.trim()
+                rtmpUrl: document.getElementById('rtmpUrl').value.trim(),
+                streamKey: document.getElementById('streamKey').value.trim(),
+                outputResolution: document.getElementById('outputResolution').value,
+                autoRestart: document.getElementById('autoRestart').checked
             };
 
             if (!validateStreamData(streamData)) {
