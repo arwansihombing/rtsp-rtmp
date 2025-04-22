@@ -14,7 +14,7 @@ class StreamManager {
     }
   }
 
-  async startStream(streamId) {
+  async startStream(streamId, retryCount = 0) {
     try {
       const stream = await Stream.findByPk(streamId);
       if (!stream) throw new Error('Stream tidak ditemukan');
@@ -23,11 +23,23 @@ class StreamManager {
         await this.stopStream(streamId);
       }
 
+      // Validasi URL RTSP
+      if (!stream.rtspUrl || !stream.rtspUrl.startsWith('rtsp://')) {
+        throw new Error('URL RTSP tidak valid');
+      }
+
       const command = ffmpeg()
         .input('anullsrc')
         .inputOptions('-f', 'lavfi')
         .input(stream.rtspUrl)
-        .inputOptions('-rtsp_transport', 'tcp')
+        .inputOptions(
+          '-rtsp_transport', 'tcp',
+          '-stimeout', '5000000', // Timeout koneksi RTSP (dalam mikrodetik)
+          '-reconnect', '1',      // Aktifkan reconnect
+          '-reconnect_at_eof', '1',
+          '-reconnect_streamed', '1',
+          '-reconnect_delay_max', '5' // Maksimum delay reconnect dalam detik
+        )
         .videoCodec('libx264')
         .audioCodec('aac')
         .audioFrequency(44100)
@@ -35,25 +47,60 @@ class StreamManager {
         .outputOptions('-strict', 'experimental')
         .format('flv');
 
+      // Konfigurasi resolusi dan bitrate berdasarkan resolusi yang dipilih
+      const resolutionMap = {
+        '480': { size: '854x480', bitrate: '800k' },
+        '720': { size: '1280x720', bitrate: '1500k' },
+        '1080': { size: '1920x1080', bitrate: '3000k' },
+        '4k': { size: '3840x2160', bitrate: '8000k' }
+      };
+
       if (stream.resolution) {
-        const [width, height] = stream.resolution.split('x');
-        command.size(`${width}x${height}`);
+        const resolution = stream.resolution.split('x')[1]; // Mengambil tinggi resolusi
+        const preset = resolutionMap[resolution];
+        
+        if (preset) {
+          command.size(preset.size)
+                 .outputOptions('-b:v', preset.bitrate);
+        } else {
+          // Jika resolusi tidak ada dalam map, gunakan resolusi custom
+          const [width, height] = stream.resolution.split('x');
+          command.size(`${width}x${height}`);
+        }
       }
 
       const rtmpUrl = `${stream.rtmpUrl}/${stream.streamKey}`;
       
       command.on('start', () => {
-        logger.info(`Stream ${stream.name} dimulai`);
-        stream.update({ status: 'running', lastError: null });
+        logger.info(`Stream ${stream.name} dimulai dengan sukses`);
+        stream.update({ 
+          status: 'running', 
+          lastError: null,
+          retryCount: 0
+        });
       });
 
       command.on('error', async (err) => {
-        logger.error(`Error pada stream ${stream.name}:`, err.message);
-        await stream.update({ status: 'error', lastError: err.message });
+        const errorMessage = `Error pada stream ${stream.name}: ${err.message}`;
+        logger.error(errorMessage);
+        logger.error('Stack trace:', err.stack);
 
-        if (stream.autoRestart) {
-          logger.info(`Mencoba restart stream ${stream.name} dalam 10 detik...`);
-          setTimeout(() => this.startStream(streamId), 10000);
+        await stream.update({ 
+          status: 'error', 
+          lastError: errorMessage,
+          retryCount: retryCount + 1
+        });
+
+        if (stream.autoRestart && retryCount < 5) {
+          const delaySeconds = Math.min(Math.pow(2, retryCount) * 5, 300); // Exponential backoff dengan max 5 menit
+          logger.info(`Mencoba restart stream ${stream.name} dalam ${delaySeconds} detik... (Percobaan ke-${retryCount + 1})`);
+          setTimeout(() => this.startStream(streamId, retryCount + 1), delaySeconds * 1000);
+        } else if (retryCount >= 5) {
+          logger.error(`Stream ${stream.name} gagal setelah ${retryCount} kali percobaan. Menghentikan auto-restart.`);
+          await stream.update({ 
+            status: 'failed',
+            lastError: `Gagal setelah ${retryCount} kali percobaan: ${errorMessage}`
+          });
         }
       });
 
@@ -61,9 +108,9 @@ class StreamManager {
         logger.info(`Stream ${stream.name} berhenti`);
         await stream.update({ status: 'stopped' });
 
-        if (stream.autoRestart) {
+        if (stream.autoRestart && retryCount < 5) {
           logger.info(`Memulai ulang stream ${stream.name}...`);
-          this.startStream(streamId);
+          await this.startStream(streamId, retryCount);
         }
       });
 
