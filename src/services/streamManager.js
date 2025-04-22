@@ -31,14 +31,8 @@ class StreamManager {
       const command = ffmpeg()
         .input('anullsrc')
         .inputOptions('-f', 'lavfi')
+        .inputOptions('-rtsp_transport', 'tcp')
         .input(stream.rtspUrl)
-        .inputOptions(
-          '-rtsp_transport', 'tcp',
-          '-stimeout', '5000000',  // Timeout koneksi dalam mikrodetik
-          '-analyzeduration', '15000000',  // Waktu analisis stream dalam mikrodetik
-          '-probesize', '5000000'  // Ukuran probe dalam byte
-        )
-        .addInputOption('-re')  // Membaca input pada kecepatan native
         .videoCodec('libx264')
         .audioCodec('aac')
         .audioFrequency(44100)
