@@ -7,13 +7,6 @@ const { logger } = require('../utils/logger');
 
 const router = express.Router();
 
-// Validasi input stream minimal - hanya memeriksa field kosong
-const streamValidation = [
-  body('name').trim(),
-  body('rtspUrl').trim(),
-  body('rtmpUrl').trim()
-];
-
 // Mendapatkan semua stream
 router.get('/', auth, async (req, res) => {
   try {
@@ -26,14 +19,22 @@ router.get('/', auth, async (req, res) => {
 });
 
 // Membuat stream baru
-router.post('/', auth, streamValidation, async (req, res) => {
+router.post('/', auth, async (req, res) => {
   try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+    const { name, rtspUrl, rtmpUrl } = req.body;
+    if (!name || !rtspUrl || !rtmpUrl) {
+      return res.status(400).json({ error: 'Mohon isi semua field yang diperlukan' });
     }
 
-    const stream = await Stream.create(req.body);
+    const streamData = {
+      name,
+      rtspUrl,
+      rtmpUrl,
+      streamKey: Math.random().toString(36).substring(2, 15),
+      status: 'stopped'
+    };
+
+    const stream = await Stream.create(streamData);
     res.status(201).json(stream);
   } catch (error) {
     logger.error('Gagal membuat stream:', error);
@@ -42,12 +43,8 @@ router.post('/', auth, streamValidation, async (req, res) => {
 });
 
 // Mengupdate stream
-router.put('/:id', auth, streamValidation, async (req, res) => {
+router.put('/:id', auth, async (req, res) => {
   try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
 
     const stream = await Stream.findByPk(req.params.id);
     if (!stream) {

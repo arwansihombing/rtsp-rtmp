@@ -1,29 +1,37 @@
 const { DataTypes } = require('sequelize');
+const crypto = require('crypto');
 
 module.exports = (sequelize) => {
   const Stream = sequelize.define('Stream', {
+    id: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true
+    },
     name: {
       type: DataTypes.STRING,
-      allowNull: false,
-      unique: true
+      allowNull: false
     },
     rtspUrl: {
       type: DataTypes.STRING,
       allowNull: false,
       validate: {
-        isUrl: true
+        notEmpty: true
       }
     },
     rtmpUrl: {
       type: DataTypes.STRING,
       allowNull: false,
       validate: {
-        isUrl: true
+        notEmpty: true
       }
     },
     streamKey: {
       type: DataTypes.STRING,
-      allowNull: false
+      allowNull: false,
+      defaultValue: function() {
+        return crypto.randomBytes(8).toString('hex');
+      }
     },
     resolution: {
       type: DataTypes.STRING,
