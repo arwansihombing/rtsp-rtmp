@@ -34,12 +34,11 @@ class StreamManager {
         .input(stream.rtspUrl)
         .inputOptions(
           '-rtsp_transport', 'tcp',
-          '-timeout', '5',       // Timeout koneksi dalam detik
-          '-reconnect', '1',      // Aktifkan reconnect
-          '-reconnect_at_eof', '1',
-          '-reconnect_streamed', '1',
-          '-reconnect_delay_max', '5' // Maksimum delay reconnect dalam detik
+          '-stimeout', '5000000',  // Timeout koneksi dalam mikrodetik
+          '-analyzeduration', '15000000',  // Waktu analisis stream dalam mikrodetik
+          '-probesize', '5000000'  // Ukuran probe dalam byte
         )
+        .addInputOption('-re')  // Membaca input pada kecepatan native
         .videoCodec('libx264')
         .audioCodec('aac')
         .audioFrequency(44100)
