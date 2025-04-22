@@ -29,8 +29,8 @@ module.exports = (sequelize) => {
     streamKey: {
       type: DataTypes.STRING,
       allowNull: false,
-      defaultValue: function() {
-        return crypto.randomBytes(8).toString('hex');
+      validate: {
+        notEmpty: true
       }
     },
     resolution: {
