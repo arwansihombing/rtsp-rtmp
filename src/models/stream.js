@@ -1,5 +1,4 @@
 const { DataTypes } = require('sequelize');
-const crypto = require('crypto');
 
 module.exports = (sequelize) => {
   const Stream = sequelize.define('Stream', {
@@ -23,14 +22,12 @@ module.exports = (sequelize) => {
       type: DataTypes.STRING,
       allowNull: false,
       validate: {
-        notEmpty: true
-      }
-    },
-    streamKey: {
-      type: DataTypes.STRING,
-      allowNull: false,
-      validate: {
-        notEmpty: true
+        notEmpty: true,
+        isValidRtmpUrl(value) {
+          if (!value.startsWith('rtmp://')) {
+            throw new Error('URL RTMP harus dimulai dengan rtmp://');
+          }
+        }
       }
     },
     resolution: {
