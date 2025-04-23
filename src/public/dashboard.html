@@ -156,6 +156,49 @@
     </div>
 
     <!-- Modal untuk menambah stream baru -->
+    <div id="editStreamModal" class="modal" style="display: none; position: fixed; z-index: 1; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4);">
+        <div class="modal-content" style="background-color: #fefefe; margin: 15% auto; padding: 20px; border: 1px solid #888; width: 80%; max-width: 500px; border-radius: 8px;">
+            <h2 style="margin-bottom: 20px;">Edit Stream</h2>
+            <form id="editStreamForm">
+                <input type="hidden" id="editStreamId">
+                <div style="margin-bottom: 15px;">
+                    <label for="editStreamName" style="display: block; margin-bottom: 5px;">Nama Stream:</label>
+                    <input type="text" id="editStreamName" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" required>
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <label for="editRtspUrl" style="display: block; margin-bottom: 5px;">RTSP URL:</label>
+                    <input type="text" id="editRtspUrl" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" required placeholder="rtsp://example.com/stream">
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <label for="editRtmpUrl" style="display: block; margin-bottom: 5px;">RTMP URL (termasuk Stream Key):</label>
+                    <input type="text" id="editRtmpUrl" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" required placeholder="rtmp://example.com/live/your-stream-key">
+                    <small style="display: block; margin-top: 5px; color: #666;">Masukkan URL RTMP lengkap dari platform streaming (termasuk stream key)</small>
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <label for="editOutputResolution" style="display: block; margin-bottom: 5px;">Resolusi Output:</label>
+                    <select id="editOutputResolution" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" required>
+                        <option value="1920x1080">1920x1080 (1080p)</option>
+                        <option value="1280x720">1280x720 (720p)</option>
+                        <option value="854x480">854x480 (480p)</option>
+                        <option value="640x360">640x360 (360p)</option>
+                    </select>
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <label style="display: flex; align-items: center; gap: 8px;">
+                        <input type="checkbox" id="editAutoRestart" style="margin: 0;">
+                        <span>Auto-restart saat koneksi terputus</span>
+                    </label>
+                </div>
+                <div id="editFormError" style="color: #e74c3c; margin-bottom: 15px; display: none;"></div>
+                <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                    <button type="button" class="btn btn-danger" onclick="closeEditStreamModal()">Batal</button>
+                    <button type="submit" class="btn btn-primary">Simpan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal untuk menambah stream baru -->
     <div id="addStreamModal" class="modal" style="display: none; position: fixed; z-index: 1; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4);">
         <div class="modal-content" style="background-color: #fefefe; margin: 15% auto; padding: 20px; border: 1px solid #888; width: 80%; max-width: 500px; border-radius: 8px;">
             <h2 style="margin-bottom: 20px;">Tambah Stream Baru</h2>
@@ -277,6 +320,7 @@
                         <button class="btn btn-primary" onclick="toggleStream('${stream.id}', '${stream.status}')">
                             ${stream.status === 'running' ? 'Stop' : 'Start'}
                         </button>
+                        <button class="btn btn-primary" onclick="openEditStreamModal('${stream.id}', '${stream.name}', '${stream.rtspUrl}', '${stream.rtmpUrl}', '${stream.outputResolution}', ${stream.autoRestart})">Edit</button>
                         <button class="btn btn-danger" onclick="deleteStream('${stream.id}')">Hapus</button>
                     </div>
                 `;
@@ -334,24 +378,55 @@
             }
         }
 
+        // Handle profile navigation
+        document.getElementById('profileLink').addEventListener('click', async (e) => {
+            e.preventDefault();
+            const token = checkAuth();
+            if (!token) return;
+
+            try {
+                const response = await makeAuthenticatedRequest('/api/user/profile');
+                if (response) {
+                    window.location.href = '/api/user/profile';
+                }
+            } catch (error) {
+                console.error('Error accessing profile:', error);
+            }
+        });
+
         // Handle logout
         document.getElementById('logoutBtn').addEventListener('click', () => {
             localStorage.removeItem('token');
             window.location.href = '/api/auth/login';
         });
 
-        // Handle add stream modal
+        // Handle modals
         document.getElementById('addStreamBtn').addEventListener('click', () => {
             document.getElementById('addStreamModal').style.display = 'block';
         });
+
+        function openEditStreamModal(id, name, rtspUrl, rtmpUrl, outputResolution, autoRestart) {
+            document.getElementById('editStreamId').value = id;
+            document.getElementById('editStreamName').value = name;
+            document.getElementById('editRtspUrl').value = rtspUrl;
+            document.getElementById('editRtmpUrl').value = rtmpUrl;
+            document.getElementById('editOutputResolution').value = outputResolution;
+            document.getElementById('editAutoRestart').checked = autoRestart;
+            document.getElementById('editStreamModal').style.display = 'block';
+        }
+
+        function closeEditStreamModal() {
+            document.getElementById('editStreamModal').style.display = 'none';
+            document.getElementById('editStreamForm').reset();
+        }
 
         function closeAddStreamModal() {
             document.getElementById('addStreamModal').style.display = 'none';
             document.getElementById('addStreamForm').reset();
         }
 
-        function showFormError(message) {
-            const errorDiv = document.getElementById('formError');
+        function showFormError(message, formId = 'formError') {
+            const errorDiv = document.getElementById(formId);
             errorDiv.textContent = message;
             errorDiv.style.display = 'block';
             setTimeout(() => {
@@ -359,21 +434,17 @@
             }, 5000);
         }
 
-        function validateStreamData(streamData) {
+        function validateStreamData(streamData, formErrorId = 'formError') {
             if (!streamData.name || streamData.name.trim() === '') {
-                showFormError('Nama stream harus diisi');
+                showFormError('Nama stream harus diisi', formErrorId);
                 return false;
             }
             if (!streamData.rtspUrl || !streamData.rtspUrl.startsWith('rtsp://')) {
-                showFormError('RTSP URL tidak valid. URL harus dimulai dengan "rtsp://"');
+                showFormError('RTSP URL tidak valid. URL harus dimulai dengan "rtsp://"', formErrorId);
                 return false;
             }
             if (!streamData.rtmpUrl || !streamData.rtmpUrl.startsWith('rtmp://')) {
-                showFormError('RTMP URL tidak valid. URL harus dimulai dengan "rtmp://"');
-                return false;
-            }
-            if (!streamData.streamKey || streamData.streamKey.trim() === '') {
-                showFormError('Stream key harus diisi');
+                showFormError('RTMP URL tidak valid. URL harus dimulai dengan "rtmp://"', formErrorId);
                 return false;
             }
             return true;
@@ -388,7 +459,6 @@
                 name: document.getElementById('streamName').value.trim(),
                 rtspUrl: document.getElementById('rtspUrl').value.trim(),
                 rtmpUrl: document.getElementById('rtmpUrl').value.trim(),
-                streamKey: document.getElementById('streamKey').value.trim(),
                 outputResolution: document.getElementById('outputResolution').value,
                 autoRestart: document.getElementById('autoRestart').checked
             };
@@ -428,6 +498,59 @@
             } catch (error) {
                 console.error('Error adding stream:', error);
                 showFormError('Terjadi kesalahan saat menambahkan stream. Silakan coba lagi.');
+            }
+        });
+
+        // Handle edit stream form submission
+        document.getElementById('editStreamForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const token = checkAuth();
+            if (!token) return;
+
+            const streamId = document.getElementById('editStreamId').value;
+            const streamData = {
+                name: document.getElementById('editStreamName').value.trim(),
+                rtspUrl: document.getElementById('editRtspUrl').value.trim(),
+                rtmpUrl: document.getElementById('editRtmpUrl').value.trim(),
+                outputResolution: document.getElementById('editOutputResolution').value,
+                autoRestart: document.getElementById('editAutoRestart').checked
+            };
+
+            if (!validateStreamData(streamData, 'editFormError')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/streams/${streamId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(streamData)
+                });
+
+                if (response.status === 401) {
+                    handleUnauthorized();
+                    return;
+                }
+
+                if (response.ok) {
+                    closeEditStreamModal();
+                    fetchStreams();
+                } else {
+                    const error = await response.json();
+                    if (response.status === 400) {
+                        showFormError(error.message || 'Data stream tidak valid. Silakan periksa kembali input Anda.', 'editFormError');
+                    } else if (response.status === 409) {
+                        showFormError('Stream dengan nama atau URL tersebut sudah ada.', 'editFormError');
+                    } else {
+                        showFormError('Gagal mengupdate stream. Silakan coba lagi nanti.', 'editFormError');
+                    }
+                }
+            } catch (error) {
+                console.error('Error updating stream:', error);
+                showFormError('Terjadi kesalahan saat mengupdate stream. Silakan coba lagi.', 'editFormError');
             }
         });
 
