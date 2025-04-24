@@ -5,6 +5,9 @@ const { logger } = require('../utils/logger');
 class StreamManager {
   constructor() {
     this.streams = new Map();
+    this.restartQueue = [];
+    this.isProcessingQueue = false;
+    this.RESTART_DELAY = 120000; // 2 menit dalam milidetik
   }
 
   async initializeStreams() {
@@ -144,9 +147,39 @@ class StreamManager {
     }
   }
 
+  async processRestartQueue() {
+    if (this.isProcessingQueue || this.restartQueue.length === 0) return;
+
+    this.isProcessingQueue = true;
+    try {
+      const streamId = this.restartQueue.shift();
+      await this.startStream(streamId);
+
+      if (this.restartQueue.length > 0) {
+        setTimeout(() => {
+          this.isProcessingQueue = false;
+          this.processRestartQueue();
+        }, this.RESTART_DELAY);
+      } else {
+        this.isProcessingQueue = false;
+      }
+    } catch (error) {
+      logger.error(`Error saat memproses antrian restart: ${error.message}`);
+      this.isProcessingQueue = false;
+    }
+  }
+
   async restartStream(streamId) {
     await this.stopStream(streamId);
-    await this.startStream(streamId);
+    
+    if (!this.restartQueue.includes(streamId)) {
+      this.restartQueue.push(streamId);
+      logger.info(`Stream ${streamId} ditambahkan ke antrian restart`);
+    }
+    
+    if (!this.isProcessingQueue) {
+      await this.processRestartQueue();
+    }
   }
 }
 
