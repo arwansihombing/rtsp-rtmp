@@ -338,16 +338,20 @@
                 const response = await fetch(`/api/streams/${id}/${action}`, {
                     method: 'POST',
                     headers: {
-                        'Authorization': `Bearer ${token}`
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
                     }
                 });
                 if (response.status === 401) {
                     handleUnauthorized();
                     return;
                 }
-                if (response.ok) {
-                    fetchStreams();
+                if (!response.ok) {
+                    const error = await response.json();
+                    alert(`Gagal ${action === 'stop' ? 'menghentikan' : 'memulai'} stream: ${error.error || 'Terjadi kesalahan'}`);
+                    return;
                 }
+                await fetchStreams();
             } catch (error) {
                 console.error(`Error ${action}ing stream:`, error);
             }

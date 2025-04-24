@@ -33,29 +33,42 @@ class StreamManager {
         .inputOptions('-f', 'lavfi')
         .input(stream.rtspUrl)
         .inputOptions('-rtsp_transport', 'tcp')
-        .inputOptions('-thread_queue_size', '512')
+        .inputOptions('-thread_queue_size', '1024')
+        .inputOptions('-probesize', '32768')
+        .inputOptions('-analyzeduration', '1000000')
+        .inputOptions('-stimeout', '10000000')
         .videoCodec('libx264')
-        .outputOptions('-preset', 'ultrafast')
+        .outputOptions('-preset', 'veryfast')
         .outputOptions('-tune', 'zerolatency')
-        .size('1280x720')
-        .fps(20)
-        .outputOptions('-threads', '4')
-        .outputOptions('-x264opts', 'subme=0:me_range=4:rc_lookahead=10:me=dia:no_chroma_me:8x8dct=0:partitions=none')
-        .videoBitrate('1500k')
-        .outputOptions('-maxrate', '1500k')
-        .outputOptions('-bufsize', '3000k')
+        .outputOptions('-profile:v', 'baseline')
+        .size('854x480')
+        .fps(15)
+        .outputOptions('-threads', '2')
+        .outputOptions('-x264opts', 'subme=0:me_range=4:rc_lookahead=0:me=dia:no_chroma_me:8x8dct=0:partitions=none')
+        .videoBitrate('500k')
+        .outputOptions('-maxrate', '500k')
+        .outputOptions('-bufsize', '1000k')
+        .outputOptions('-g', '30')
+        .outputOptions('-keyint_min', '30')
+        .outputOptions('-sc_threshold', '0')
+        .outputOptions('-pix_fmt', 'yuv420p')
         .audioCodec('aac')
         .audioFrequency(44100)
-        .audioBitrate('16k')
+        .audioBitrate('32k')
         .outputOptions('-strict', 'experimental')
+        .outputOptions('-max_muxing_queue_size', '1024')
+        .outputOptions('-reconnect', '1')
+        .outputOptions('-reconnect_at_eof', '1')
+        .outputOptions('-reconnect_streamed', '1')
+        .outputOptions('-reconnect_delay_max', '5')
         .format('flv');
 
       // Konfigurasi resolusi dan bitrate berdasarkan resolusi yang dipilih
       const resolutionMap = {
-        '480': { size: '854x480', bitrate: '800k' },
-        '720': { size: '1280x720', bitrate: '1500k' },
-        '1080': { size: '1920x1080', bitrate: '3000k' },
-        '4k': { size: '3840x2160', bitrate: '8000k' }
+        '480': { size: '854x480', bitrate: '500k' },
+        '720': { size: '1280x720', bitrate: '1000k' },
+        '1080': { size: '1920x1080', bitrate: '2000k' },
+        '4k': { size: '3840x2160', bitrate: '4000k' }
       };
 
       if (stream.resolution) {
@@ -89,16 +102,33 @@ class StreamManager {
         logger.error(errorMessage);
         logger.error('Stack trace:', err.stack);
 
-        await stream.update({ 
-          status: 'error', 
-          lastError: errorMessage,
-          retryCount: retryCount + 1
-        });
+        try {
+          await stream.update({ 
+            status: 'error', 
+            lastError: errorMessage,
+            retryCount: retryCount + 1
+          });
+        } catch (updateError) {
+          logger.error(`Gagal mengupdate status stream: ${updateError.message}`);
+        }
 
         if (stream.autoRestart && retryCount < 5) {
           const delaySeconds = Math.min(Math.pow(2, retryCount) * 5, 300); // Exponential backoff dengan max 5 menit
           logger.info(`Mencoba restart stream ${stream.name} dalam ${delaySeconds} detik... (Percobaan ke-${retryCount + 1})`);
-          setTimeout(() => this.startStream(streamId, retryCount + 1), delaySeconds * 1000);
+          setTimeout(async () => {
+            try {
+              const currentStream = await Stream.findByPk(streamId);
+              if (!currentStream) {
+                logger.error(`Stream ${streamId} tidak ditemukan saat mencoba restart`);
+                return;
+              }
+              if (currentStream.status !== 'stopped') {
+                await this.startStream(streamId, retryCount + 1);
+              }
+            } catch (retryError) {
+              logger.error(`Gagal melakukan retry stream: ${retryError.message}`);
+            }
+          }, delaySeconds * 1000);
         } else if (retryCount >= 5) {
           logger.error(`Stream ${stream.name} gagal setelah ${retryCount} kali percobaan. Menghentikan auto-restart.`);
           await stream.update({ 
