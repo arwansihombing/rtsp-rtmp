@@ -44,6 +44,10 @@ async function init() {
 
     const streamManager = await setupStreamManager();
     logger.info('Stream manager berhasil diinisialisasi');
+    
+    // Memulai semua stream yang aktif
+    await streamManager.initializeStreams();
+    logger.info('Semua stream aktif berhasil dimulai');
 
     app.listen(PORT, () => {
       logger.info(`Server berjalan pada port ${PORT}`);

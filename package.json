@@ -4,7 +4,7 @@
   "description": "RTSP to RTMP encoder web application with FFmpeg",
   "main": "src/index.js",
   "scripts": {
-    "start": "node src/index.js",
+    "start": "node src/index.js > logs/app.log 2>&1 &",
     "dev": "nodemon src/index.js"
   },
   "dependencies": {
