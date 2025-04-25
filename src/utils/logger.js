@@ -26,14 +26,13 @@ function setupLogger() {
       ]
     });
 
-    if (process.env.NODE_ENV !== 'production') {
-      logger.add(new winston.transports.Console({
-        format: winston.format.combine(
-          winston.format.colorize(),
-          winston.format.simple()
-        )
-      }));
-    }
+    // Selalu tambahkan console transport
+    logger.add(new winston.transports.Console({
+      format: winston.format.combine(
+        winston.format.colorize(),
+        winston.format.simple()
+      )
+    }));
   }
 
   return logger;
