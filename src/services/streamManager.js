@@ -45,10 +45,10 @@ class StreamManager {
 
       // Konfigurasi resolusi dan bitrate berdasarkan resolusi yang dipilih
       const resolutionMap = {
-        '480': { size: '854x480', bitrate: '500k' },
-        '720': { size: '1280x720', bitrate: '1000k' },
-        '1080': { size: '1920x1080', bitrate: '2000k' },
-        '4k': { size: '3840x2160', bitrate: '4000k' }
+        '360': { size: '640x360', bitrate: '800k', fps: '30', preset: 'veryfast' },
+        '480': { size: '854x480', bitrate: '1200k', fps: '30', preset: 'veryfast' },
+        '720': { size: '1280x720', bitrate: '2500k', fps: '30', preset: 'veryfast' },
+        '1080': { size: '1920x1080', bitrate: '4500k', fps: '30', preset: 'veryfast' }
       };
 
       if (stream.resolution) {
@@ -57,7 +57,15 @@ class StreamManager {
         
         if (preset) {
           command.size(preset.size)
-                 .outputOptions('-b:v', preset.bitrate);
+                 .outputOptions(
+                   '-b:v', preset.bitrate,
+                   '-preset', preset.preset,
+                   '-maxrate', preset.bitrate,
+                   '-bufsize', `${parseInt(preset.bitrate) * 2}k`,
+                   '-r', preset.fps,
+                   '-g', `${preset.fps * 2}`,
+                   '-keyint_min', preset.fps
+                 );
         } else {
           // Jika resolusi tidak ada dalam map, gunakan resolusi custom
           const [width, height] = stream.resolution.split('x');

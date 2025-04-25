@@ -4,6 +4,7 @@ const { Stream } = require('../models');
 const { auth } = require('../middleware/auth');
 const { setupStreamManager } = require('../services/streamManager');
 const { logger } = require('../utils/logger');
+const youtubeService = require('../services/youtubeService');
 
 const router = express.Router();
 
@@ -21,16 +22,20 @@ router.get('/', auth, async (req, res) => {
 // Membuat stream baru
 router.post('/', auth, async (req, res) => {
   try {
-    const { name, rtspUrl, rtmpUrl } = req.body;
-    if (!name || !rtspUrl || !rtmpUrl) {
-      return res.status(400).json({ error: 'Mohon isi semua field yang diperlukan' });
+    const { name, rtspUrl, description } = req.body;
+    if (!name || !rtspUrl) {
+      return res.status(400).json({ error: 'Mohon isi nama dan URL RTSP' });
     }
+
+    // Membuat live stream di YouTube
+    const youtubeStream = await youtubeService.createLiveStream(name, description);
 
     const streamData = {
       name,
       rtspUrl,
-      rtmpUrl,
-      streamKey: Math.random().toString(36).substring(2, 15),
+      rtmpUrl: youtubeStream.rtmpUrl,
+      youtubeStreamId: youtubeStream.streamId,
+      youtubeBroadcastId: youtubeStream.broadcastId,
       status: 'stopped'
     };
 
@@ -69,6 +74,12 @@ router.delete('/:id', auth, async (req, res) => {
 
     const streamManager = await setupStreamManager();
     await streamManager.stopStream(stream.id);
+
+    // Hapus live stream dari YouTube jika ada
+    if (stream.youtubeBroadcastId) {
+      await youtubeService.deleteLiveStream(stream.youtubeBroadcastId);
+    }
+
     await stream.destroy();
     res.json({ message: 'Stream berhasil dihapus' });
   } catch (error) {

@@ -1,5 +1,14 @@
 const jwt = require('jsonwebtoken');
 const { User } = require('../models');
+const { google } = require('googleapis');
+const config = require('../config/auth');
+
+// Inisialisasi OAuth2 client
+const oauth2Client = new google.auth.OAuth2(
+    config.oauth2.clientId,
+    config.oauth2.clientSecret,
+    config.oauth2.redirectUri
+);
 
 const auth = async (req, res, next) => {
   try {
@@ -50,7 +59,53 @@ const adminOnly = async (req, res, next) => {
   next();
 };
 
+// Middleware untuk memvalidasi token OAuth YouTube
+const validateYouTubeOAuth = async (req, res, next) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Token OAuth YouTube tidak ditemukan' });
+    }
+
+    const token = authHeader.split(' ')[1];
+    oauth2Client.setCredentials({ access_token: token });
+
+    // Verifikasi token dengan Google
+    try {
+      const tokenInfo = await oauth2Client.getTokenInfo(token);
+      if (!tokenInfo || !tokenInfo.email) {
+        return res.status(401).json({ error: 'Token OAuth YouTube tidak valid' });
+      }
+      req.oauth2Client = oauth2Client;
+      next();
+    } catch (error) {
+      return res.status(401).json({ error: 'Token OAuth YouTube tidak valid' });
+    }
+  } catch (error) {
+    console.error('Error validasi OAuth YouTube:', error);
+    res.status(401).json({ error: 'Gagal memvalidasi token OAuth YouTube' });
+  }
+};
+
+// Middleware untuk memvalidasi API Key YouTube
+const validateYouTubeApiKey = (req, res, next) => {
+  const apiKey = req.query.key || req.headers['x-api-key'];
+  
+  if (!apiKey) {
+    return res.status(401).json({ error: 'API Key YouTube tidak ditemukan' });
+  }
+
+  if (apiKey !== config.apiKey) {
+    return res.status(401).json({ error: 'API Key YouTube tidak valid' });
+  }
+
+  next();
+};
+
 module.exports = {
   auth,
-  adminOnly
+  adminOnly,
+  validateYouTubeOAuth,
+  validateYouTubeApiKey,
+  oauth2Client
 };

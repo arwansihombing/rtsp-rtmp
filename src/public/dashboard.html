@@ -67,19 +67,23 @@
 
         .stream-list {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-            gap: 1.5rem;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
             margin: 2rem auto;
             max-width: 1400px;
-            padding: 0 1rem;
+            padding: 1.5rem;
+            align-items: start;
         }
 
         .stream-item {
             background: white;
             border-radius: 12px;
-            padding: 1.5rem;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            padding: 2rem;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.08);
             transition: transform 0.2s ease, box-shadow 0.2s ease;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
         }
 
         .stream-item:hover {
@@ -138,13 +142,14 @@
         @media (max-width: 768px) {
             .stream-list {
                 grid-template-columns: 1fr;
-                padding: 0 1rem;
+                padding: 1rem;
+                gap: 1.5rem;
             }
 
             .navbar {
                 flex-direction: column;
                 text-align: center;
-                padding: 1rem;
+                padding: 1.25rem;
             }
 
             .navbar-menu {
@@ -155,10 +160,9 @@
                 width: 100%;
                 margin-bottom: 0.5rem;
             }
-            }
 
-            .stream-list {
-                grid-template-columns: 1fr;
+            .stream-item {
+                padding: 1.5rem;
             }
         }
     </style>
@@ -185,8 +189,8 @@
     </div>
 
     <!-- Modal untuk menambah stream baru -->
-    <div id="editStreamModal" class="modal" style="display: none; position: fixed; z-index: 1; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4);">
-        <div class="modal-content" style="background-color: #fefefe; margin: 15% auto; padding: 20px; border: 1px solid #888; width: 80%; max-width: 500px; border-radius: 8px;">
+    <div id="editStreamModal" class="modal" style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6);">
+        <div class="modal-content" style="background-color: #fefefe; margin: 10% auto; padding: 2rem; border: none; width: 90%; max-width: 550px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.15);">
             <h2 style="margin-bottom: 20px;">Edit Stream</h2>
             <form id="editStreamForm">
                 <input type="hidden" id="editStreamId">
@@ -228,8 +232,8 @@
     </div>
 
     <!-- Modal untuk menambah stream baru -->
-    <div id="addStreamModal" class="modal" style="display: none; position: fixed; z-index: 1; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4);">
-        <div class="modal-content" style="background-color: #fefefe; margin: 15% auto; padding: 20px; border: 1px solid #888; width: 80%; max-width: 500px; border-radius: 8px;">
+    <div id="addStreamModal" class="modal" style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6);">
+        <div class="modal-content" style="background-color: #fefefe; margin: 10% auto; padding: 2rem; border: none; width: 90%; max-width: 550px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.15);">
             <h2 style="margin-bottom: 20px;">Tambah Stream Baru</h2>
             <form id="addStreamForm">
                 <div style="margin-bottom: 15px;">

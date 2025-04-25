@@ -5,11 +5,15 @@ const { User, Stream } = require('../models');
 const { logger } = require('../utils/logger');
 const fs = require('fs').promises;
 const path = require('path');
+const youtubeCredentialsRouter = require('./youtube-credentials');
 
 const router = express.Router();
 
 // Middleware untuk memastikan hanya admin yang bisa mengakses
 router.use(auth, adminOnly);
+
+// Rute untuk manajemen kredensial YouTube
+router.use('/youtube-credentials', youtubeCredentialsRouter);
 
 // Mendapatkan statistik sistem
 router.get('/stats', async (req, res) => {
